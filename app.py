@@ -52,7 +52,7 @@ with st.sidebar:
     # 말투 설정
     assistant_tone = st.text_area(
         "챗봇의 말투/스타일 지정:", 
-        value=st.session_state.get("assistant_tone", "설레는 듯한 달콤하고 부드러운 말투투"), 
+        value=st.session_state.get("assistant_tone", "설레는 듯한 달콤하고 부드러운 말투"), 
         key="assistant_tone"
     )
 
