@@ -1,3 +1,5 @@
 streamlit
 google-genai
-python-dotenv  # <<=== 이것을 다시 추가합니다!
+streamlit-webrtc
+gTTS
+pydub
