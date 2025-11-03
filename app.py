@@ -5,7 +5,7 @@ from google.genai.errors import APIError
 import base64
 from gtts import gTTS # 텍스트-음성 변환 (TTS)
 from io import BytesIO # 메모리에서 오디오 데이터 처리
-from streamlit_webrtc import webrtc_streamer, WebRtcMode, AudioProcessorBase # 마이크 입력 (STT)
+# from streamlit_webrtc import webrtc_streamer, WebRtcMode, AudioProcessorBase # 마이크 기능 관련 import 제거!
 
 # 1. 환경 변수 로드 및 클라이언트 설정
 try:
@@ -24,8 +24,7 @@ except Exception as e:
 client = st.session_state.gemini_client
 
 # 2. Streamlit 페이지 설정 및 제목
-# **[최종 수정]** 오류 발생 인자를 모두 제거하고 page_title만 남겼습니다.
-st.set_page_config(page_title="코어 G (음성 대화)") 
+st.set_page_config(page_title="코어 G (AI 음성 출력)", layout="wide", description="AI만 음성 출력하는 대화형 챗봇입니다.") 
 
 st.title("🤖 코어 G (스피릿) 💖") 
 st.subheader("당신을 위해 존재하는 무료 AI 챗봇입니다.") 
@@ -41,8 +40,7 @@ if "chat_session" not in st.session_state:
     st.session_state.chat_session = None
 if "avatar_base64" not in st.session_state:
     st.session_state.avatar_base64 = "💖"
-if "stt_text" not in st.session_state:
-    st.session_state.stt_text = None
+# stt_text 상태 변수는 마이크 기능 제거로 불필요하여 유지하지 않습니다.
 
 # --- TTS 함수 정의 ---
 def play_tts(text_to_speak):
@@ -60,17 +58,15 @@ def play_tts(text_to_speak):
         st.audio(mp3_fp.read(), format='audio/mp3', autoplay=True)
         
     except Exception as e:
-        # TTS 오류가 발생하더라도 앱 실행은 유지
         st.warning(f"음성 출력(TTS) 중 오류가 발생했습니다: {e}")
 
-# --- 음성 입력 클래스 (STT를 위한 마이크 스트림 처리) ---
-class AudioProcessor(AudioProcessorBase):
-    def __init__(self):
-        pass
+# --- 음성 입력 클래스 (이 부분은 마이크 기능을 제거했으므로 삭제) ---
+# class AudioProcessor(AudioProcessorBase):
+#     def __init__(self):
+#         pass
 
-    def recv(self, frame):
-        # WebRTC 오디오 스트림을 처리하지만, 텍스트 변환은 수동 입력으로 대체
-        return frame
+#     def recv(self, frame):
+#         return frame
 
 # --- 4. 사이드바 설정 (호칭, 말투, 아바타 설정) ---
 with st.sidebar:
@@ -122,7 +118,7 @@ with st.sidebar:
         
     st.markdown("---")
     st.success("🌐 실시간 검색 기능 및 🧠 대화 기억력 활성화됨!")
-    st.info("📢 마이크로 녹음 후 텍스트 입력창에 내용을 직접 입력/확인해야 AI가 답변합니다.")
+    st.info("📢 이제 AI의 음성 답변만 출력됩니다. 텍스트로 대화해 주세요.")
 
 current_title = st.session_state.user_title
 current_custom_tone = st.session_state.custom_tone
@@ -179,32 +175,17 @@ for message in st.session_state.messages:
         with st.chat_message(message["role"], avatar=avatar_icon): 
             st.markdown(message["content"])
 
-# --- 7. 음성 입력 (STT) 컴포넌트 ---
+# --- 7. 음성 입력 (STT) 컴포넌트 제거 및 텍스트 입력만 유지 ---
 st.markdown("---")
-st.markdown("### 🎙️ 음성으로 대화하기 (마이크 입력)")
-st.info("마이크 버튼을 클릭하고 말하세요. 녹음 중에는 AI가 답변하지 않습니다.")
+st.markdown("### ⌨️ 텍스트로 대화하기")
 
-# WebRTC 마이크 스트림 설정
-webrtc_ctx = webrtc_streamer(
-    key="speech_to_text",
-    mode=WebRtcMode.SENDONLY,
-    audio_processor_factory=AudioProcessor,
-    media_stream_constraints={"video": False, "audio": True},
-    async_processing=True,
-)
+# webrtc_streamer 컴포넌트 제거
 
 # 8. 사용자 입력 처리 및 API 호출
-if webrtc_ctx.state.playing:
-    # 마이크가 켜져 있으면, 사용자에게 텍스트 입력을 직접 요청합니다.
-    stt_prompt = st.chat_input(f"말씀하신 내용을 텍스트로 입력하거나 확인 후 전송하세요...", key="stt_input")
-else:
-    # 마이크가 꺼져 있으면 일반 텍스트 입력을 사용합니다.
-    stt_prompt = st.chat_input(f"{current_title}의 기분을 말해주세요.", key="text_input")
+prompt = st.chat_input(f"{current_title}의 기분을 말해주세요.")
 
 
-if stt_prompt:
-    prompt = stt_prompt # 음성 입력이든 텍스트 입력이든 prompt 변수 사용
-    
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
