@@ -5,7 +5,7 @@ from google.genai.errors import APIError
 import base64
 from gtts import gTTS # 텍스트-음성 변환 (TTS)
 from io import BytesIO # 메모리에서 오디오 데이터 처리
-# from streamlit_webrtc import webrtc_streamer, WebRtcMode, AudioProcessorBase # 마이크 기능 관련 import 제거!
+# streamlit-webrtc 관련 import는 마이크 기능 제거로 불필요하여 제외
 
 # 1. 환경 변수 로드 및 클라이언트 설정
 try:
@@ -24,7 +24,8 @@ except Exception as e:
 client = st.session_state.gemini_client
 
 # 2. Streamlit 페이지 설정 및 제목
-st.set_page_config(page_title="코어 G (AI 음성 출력)", layout="wide", description="AI만 음성 출력하는 대화형 챗봇입니다.") 
+# **[최종 수정]** 오류 발생 인자 (layout, description)를 모두 제거하고 page_title만 남겼습니다.
+st.set_page_config(page_title="코어 G (AI 음성 출력)") 
 
 st.title("🤖 코어 G (스피릿) 💖") 
 st.subheader("당신을 위해 존재하는 무료 AI 챗봇입니다.") 
@@ -40,7 +41,6 @@ if "chat_session" not in st.session_state:
     st.session_state.chat_session = None
 if "avatar_base64" not in st.session_state:
     st.session_state.avatar_base64 = "💖"
-# stt_text 상태 변수는 마이크 기능 제거로 불필요하여 유지하지 않습니다.
 
 # --- TTS 함수 정의 ---
 def play_tts(text_to_speak):
@@ -59,14 +59,6 @@ def play_tts(text_to_speak):
         
     except Exception as e:
         st.warning(f"음성 출력(TTS) 중 오류가 발생했습니다: {e}")
-
-# --- 음성 입력 클래스 (이 부분은 마이크 기능을 제거했으므로 삭제) ---
-# class AudioProcessor(AudioProcessorBase):
-#     def __init__(self):
-#         pass
-
-#     def recv(self, frame):
-#         return frame
 
 # --- 4. 사이드바 설정 (호칭, 말투, 아바타 설정) ---
 with st.sidebar:
@@ -175,11 +167,9 @@ for message in st.session_state.messages:
         with st.chat_message(message["role"], avatar=avatar_icon): 
             st.markdown(message["content"])
 
-# --- 7. 음성 입력 (STT) 컴포넌트 제거 및 텍스트 입력만 유지 ---
+# --- 7. 텍스트 입력만 유지 ---
 st.markdown("---")
 st.markdown("### ⌨️ 텍스트로 대화하기")
-
-# webrtc_streamer 컴포넌트 제거
 
 # 8. 사용자 입력 처리 및 API 호출
 prompt = st.chat_input(f"{current_title}의 기분을 말해주세요.")
@@ -187,28 +177,3 @@ prompt = st.chat_input(f"{current_title}의 기분을 말해주세요.")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    with st.spinner("스피릿이 정보를 탐색하고 기억을 되새기며 음성 답변을 준비하고 있어요... 🔍🧠✨"):
-        try:
-            chat_session = st.session_state.get('chat_session')
-            if not chat_session:
-                st.error("채팅 세션이 유효하지 않아 대화를 시작할 수 없습니다. 호칭이나 말투를 변경하거나 새로고침 해보세요.")
-                st.rerun()
-
-            response = chat_session.send_message(prompt)
-            
-            ai_response = response.text
-            st.session_state.messages.append({"role": "assistant", "content": ai_response})
-            
-            with st.chat_message("assistant", avatar=current_avatar): 
-                st.markdown(ai_response)
-                # --- [TTS 실행] ---
-                play_tts(ai_response)
-                # ----------------
-                
-        except APIError as e:
-            st.error(f"Gemini API 오류 발생: {e}")
-        except Exception as e:
-            st.error(f"알 수 없는 오류: {e}")
